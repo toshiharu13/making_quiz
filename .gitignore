@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#pycharm_cofig_files
+.idea/
+#log_files
+*.lod
+#temp_folder
+temp/
