@@ -1,4 +1,5 @@
 import logging
+import re
 from pathlib import Path
 
 
@@ -6,7 +7,8 @@ def open_file(file):
     logging.info(f'в функцию open_file передано - {file}')
     with open(file, 'r', encoding='KOI8-R') as quiz_file:
         file_content = quiz_file.read()
-        print(file_content)
+        patern = re.compile("\n\n")
+        print(patern.split(file_content))
 
 
 def main():
