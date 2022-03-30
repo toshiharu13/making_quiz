@@ -3,12 +3,40 @@ import re
 from pathlib import Path
 
 
-def open_file(file):
-    logging.info(f'в функцию open_file передано - {file}')
+def get_additional_split(string):
+    result = re.split(r'\n', string, maxsplit=1)
+    cleared_string = result[1]
+    logging.info(f'Результат нормализации - {cleared_string}')
+    return cleared_string
+
+
+
+def create_dict_quiz(splitted_strings):
+    dict_quiz = {}
+    question = ''
+    for string in splitted_strings:
+        if re.match(r'Вопрос \d', string):
+            question = get_additional_split(string)
+            continue
+        if re.match(r'Ответ:', string):
+            answer = get_additional_split(string)
+            try:
+                dict_quiz[question] = answer
+                question, answer = '', ''
+            except BaseException as error:
+                logging.error(f'Ошибка при заполнении словаря {error}')
+    return dict_quiz
+
+
+
+def get_splitted_strings_from_file(file):
+    logging.info(f'в функцию get_splitted_strings_from_file - {file}')
     with open(file, 'r', encoding='KOI8-R') as quiz_file:
         file_content = quiz_file.read()
         patern = re.compile("\n\n")
-        print(patern.split(file_content))
+        splitted_string = patern.split(file_content)
+        logging.info(f'возвращаем {splitted_string}')
+        return splitted_string
 
 
 def main():
@@ -16,7 +44,9 @@ def main():
     quiz_file = 'idv10.txt'
     quiz_full_path = Path.cwd()/quiz_folder/quiz_file
 
-    open_file(quiz_full_path)
+    splitted_strings = get_splitted_strings_from_file(quiz_full_path)
+    quiz_dict_question = create_dict_quiz(splitted_strings)
+    print(quiz_dict_question)
 
 
 if __name__ == '__main__':
