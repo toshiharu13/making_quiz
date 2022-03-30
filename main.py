@@ -2,6 +2,7 @@ import logging
 import re
 from pathlib import Path
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram import ReplyKeyboardMarkup
 from environs import Env
 
 
@@ -30,7 +31,6 @@ def create_dict_quiz(splitted_strings):
     return dict_quiz
 
 
-
 def get_splitted_strings_from_file(file):
     logging.info(f'в функцию get_splitted_strings_from_file - {file}')
     with open(file, 'r', encoding='KOI8-R') as quiz_file:
@@ -45,6 +45,12 @@ def start(update, context):
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="Обнаружена база повстанцев!")
+    custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счёт']]
+    reply_markup = ReplyKeyboardMarkup(custom_keyboard)
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text='Выдвинуть свободный флот в квадрат дельта!',
+        reply_markup=reply_markup)
 
 
 
