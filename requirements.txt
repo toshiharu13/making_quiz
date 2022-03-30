@@ -1,0 +1,2 @@
+environs==9.*
+python-telegram-bot==13.*
