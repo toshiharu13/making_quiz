@@ -63,16 +63,19 @@ def help(update, context):
 def get_question(quiz, id, redis_db):
     currant_question = next(iter(quiz))
     redis_db.set(id, currant_question)
-    print((redis_db.get(id)).decode('utf-8'))
+    #print((redis_db.get(id)).decode('utf-8'))
     return currant_question
 
 
 def echo(update, context):
+    currant_user_id = update.effective_chat.id
     user_message = update.message.text
     quiz_dict_question = context.bot_data['quiz_dict_question']
     redis_db = context.bot_data['redis_db']
+    users_question = redis_db.get(currant_user_id)
+    answer = quiz_dict_question[users_question]
+    #print(answer)
     logging.info(f'в функцию echo передан словарь {quiz_dict_question}')
-    currant_user_id = update.effective_chat.id
 
     if user_message == 'Новый вопрос':
         question = get_question(quiz_dict_question, currant_user_id, redis_db)
@@ -80,16 +83,26 @@ def echo(update, context):
             chat_id=currant_user_id,
             text=question)
     else:
+        normalized_answer = re.split(r'\.', answer, maxsplit=1)[0]
+        normalized_answer = re.split(r'\(', normalized_answer, maxsplit=1)[0]
+        normalized_answer = re.sub(r'[\'\"]', '', normalized_answer).lower()
+        print(normalized_answer)
+        print(user_message)
+        if user_message == normalized_answer:
+            bot_answer = 'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
+        else:
+            bot_answer = 'Неправильно… Попробуешь ещё раз?'
+
         context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=user_message)
+            text=bot_answer)
 
 
 def main():
     env = Env()
     env.read_env()
 
-    redis_db = redis.Redis(host='localhost', port=6379, db=0)
+    redis_db = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
     quiz_folder = 'quiz-questions'
     quiz_file = 'idv10.txt'
