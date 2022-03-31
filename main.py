@@ -2,7 +2,7 @@ import logging
 import re
 from pathlib import Path
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-from telegram import ReplyKeyboardMarkup
+from telegram import ReplyKeyboardMarkup, Bot
 from environs import Env
 
 
@@ -53,7 +53,6 @@ def start(update, context):
         reply_markup=reply_markup)
 
 
-
 def help(update, context):
     context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -62,10 +61,17 @@ def help(update, context):
 
 def echo(update, context):
     user_message = update.message.text
-    context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=user_message)
-    #print(update)
+    quiz_dict_question = context.bot_data['quiz_dict_question']
+    logging.info(f'в функцию echo передан словарь {quiz_dict_question}')
+    if user_message == 'Новый вопрос':
+        question = next(iter(quiz_dict_question))
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=question)
+    else:
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=user_message)
 
 
 def main():
@@ -76,20 +82,22 @@ def main():
     quiz_file = 'idv10.txt'
     quiz_full_path = Path.cwd()/quiz_folder/quiz_file
     tg_bot_key = env.str('TG_BOT_KEY')
+    #bot = Bot(token=tg_bot_key)
 
     splitted_strings = get_splitted_strings_from_file(quiz_full_path)
     quiz_dict_question = create_dict_quiz(splitted_strings)
-    #print(quiz_dict_question)
 
     try:
         updater = Updater(tg_bot_key)
         dispatcher = updater.dispatcher
-        # on different commands - answer in Telegram
+        bot_data = {
+            'quiz_dict_question': quiz_dict_question}
+
         dispatcher.add_handler(CommandHandler("start", start))
         dispatcher.add_handler(CommandHandler("help", help))
 
-        # on noncommand i.e message - echo the message on Telegram
         dispatcher.add_handler(MessageHandler(Filters.text, echo))
+        dispatcher.bot_data = bot_data
 
         updater.start_polling()
         updater.idle()
