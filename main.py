@@ -1,5 +1,6 @@
 import logging
 import re
+import redis
 from pathlib import Path
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import ReplyKeyboardMarkup, Bot
@@ -59,14 +60,24 @@ def help(update, context):
         text=" Учебный бот для проведения олимпиад")
 
 
+def get_question(quiz, id, redis_db):
+    currant_question = next(iter(quiz))
+    redis_db.set(id, currant_question)
+    print((redis_db.get(id)).decode('utf-8'))
+    return currant_question
+
+
 def echo(update, context):
     user_message = update.message.text
     quiz_dict_question = context.bot_data['quiz_dict_question']
+    redis_db = context.bot_data['redis_db']
     logging.info(f'в функцию echo передан словарь {quiz_dict_question}')
+    currant_user_id = update.effective_chat.id
+
     if user_message == 'Новый вопрос':
-        question = next(iter(quiz_dict_question))
+        question = get_question(quiz_dict_question, currant_user_id, redis_db)
         context.bot.send_message(
-            chat_id=update.effective_chat.id,
+            chat_id=currant_user_id,
             text=question)
     else:
         context.bot.send_message(
@@ -78,11 +89,12 @@ def main():
     env = Env()
     env.read_env()
 
+    redis_db = redis.Redis(host='localhost', port=6379, db=0)
+
     quiz_folder = 'quiz-questions'
     quiz_file = 'idv10.txt'
     quiz_full_path = Path.cwd()/quiz_folder/quiz_file
     tg_bot_key = env.str('TG_BOT_KEY')
-    #bot = Bot(token=tg_bot_key)
 
     splitted_strings = get_splitted_strings_from_file(quiz_full_path)
     quiz_dict_question = create_dict_quiz(splitted_strings)
@@ -91,7 +103,8 @@ def main():
         updater = Updater(tg_bot_key)
         dispatcher = updater.dispatcher
         bot_data = {
-            'quiz_dict_question': quiz_dict_question}
+            'quiz_dict_question': quiz_dict_question,
+            'redis_db': redis_db,}
 
         dispatcher.add_handler(CommandHandler("start", start))
         dispatcher.add_handler(CommandHandler("help", help))
