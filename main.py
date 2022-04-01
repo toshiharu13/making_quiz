@@ -46,6 +46,9 @@ def get_splitted_strings_from_file(file):
 
 
 def start(update, context):
+    redis_db = context.bot_data['redis_db']
+    redis_db.flushdb()
+
     custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счёт']]
 
     update.message.reply_text(
@@ -74,9 +77,14 @@ def help(update, context):
 
 
 def get_question(quiz, id, redis_db, old_key=None):
-    if not old_key:
-        currant_question = next(iter(quiz))
-        redis_db.set(id, currant_question)
+    if old_key:
+        try:
+            quiz.pop(old_key)
+        except Exception as error:
+            print(error)
+    currant_question = next(iter(quiz))
+    redis_db.set(id, currant_question)
+    print(f'Выборка вопроса - {currant_question}')
 
 
 
@@ -94,16 +102,15 @@ def handle_new_question_request(update, context):
     currant_user_id = update.effective_chat.id
     quiz_dict_question = context.bot_data['quiz_dict_question']
     redis_db = context.bot_data['redis_db']
-    #users_question = redis_db.get(currant_user_id)
+    users_question = redis_db.get(currant_user_id)
     #answer = quiz_dict_question[users_question]
-    #print(answer)
+    print(f'сохраненный users_question - {users_question}')
     #logging.info(f'в функцию echo передан словарь {quiz_dict_question}')
 
-    question = get_question(quiz_dict_question, currant_user_id, redis_db)
+    question = get_question(quiz_dict_question, currant_user_id, redis_db, users_question)
     context.bot.send_message(
         chat_id=currant_user_id,
         text=question)
-    #return CHECK_ANSWER
     return QUIZ_KEYBOARD
 
 
@@ -117,7 +124,13 @@ def surender(update, context):
     context.bot.send_message(
         chat_id=currant_user_id,
         text=text)
+    question = get_question(quiz_dict_question, currant_user_id, redis_db,
+                            users_question)
+    context.bot.send_message(
+        chat_id=currant_user_id,
+        text=question)
 
+    return QUIZ_KEYBOARD
 
 def get_count(update, context):
     currant_user_id = update.effective_chat.id
@@ -135,11 +148,8 @@ def handle_solution_attempt(update, context):
     users_question = redis_db.get(currant_user_id)
     answer = quiz_dict_question[users_question]
 
-    #normalized_answer = re.split(r'\.', answer, maxsplit=1)[0]
-    #normalized_answer = re.split(r'\(', normalized_answer, maxsplit=1)[0]
-    #normalized_answer = re.sub(r'[\'\"]', '', normalized_answer).lower()
-    print(f' проверка ответа - {answer}')
-    print(f' проверка ответа - {user_message}')
+    #print(f' проверка ответа - {answer}')
+    #print(f' проверка ответа - {user_message}')
     if user_message == answer:
         bot_answer = 'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
     else:
