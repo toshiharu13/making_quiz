@@ -104,10 +104,10 @@ def handle_new_question_request(update, context):
     redis_db = context.bot_data['redis_db']
     users_question = redis_db.get(currant_user_id)
     #answer = quiz_dict_question[users_question]
-    print(f'сохраненный users_question - {users_question}')
+    #print(f'сохраненный users_question - {users_question}')
     #logging.info(f'в функцию echo передан словарь {quiz_dict_question}')
 
-    question = get_question(quiz_dict_question, currant_user_id, redis_db, users_question)
+    question = get_question(quiz_dict_question, currant_user_id, redis_db)
     context.bot.send_message(
         chat_id=currant_user_id,
         text=question)
@@ -152,6 +152,8 @@ def handle_solution_attempt(update, context):
     #print(f' проверка ответа - {user_message}')
     if user_message == answer:
         bot_answer = 'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
+        get_question(quiz_dict_question, currant_user_id, redis_db,
+                                users_question)
     else:
         bot_answer = 'Неправильно… Попробуешь ещё раз?'
 
