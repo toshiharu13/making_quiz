@@ -11,6 +11,7 @@ from prepare_quiz import get_splitted_strings_from_file, create_dict_quiz
 
 
 HELP, QUIZ_KEYBOARD, CHECK_ANSWER = range(3)
+ANSWERS_COUNT = 0
 
 
 def start(update, context):
@@ -37,13 +38,6 @@ def end(update, context):
     return ConversationHandler.END
 
 
-def help(update, context):
-    print('help')
-    context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=" Учебный бот для проведения олимпиад")
-
-
 def get_question(quiz, id, redis_db, old_key=None):
     if old_key:
         try:
@@ -54,15 +48,11 @@ def get_question(quiz, id, redis_db, old_key=None):
     redis_db.set(id, currant_question)
     print(f'Выборка вопроса - {currant_question}')
 
-
-
     normalized_answer = re.split(r'\.', quiz[currant_question], maxsplit=1)[0]
     normalized_answer = re.split(r'\(', normalized_answer, maxsplit=1)[0]
     normalized_answer = re.sub(r'[\'\"]', '', normalized_answer).lower()
     quiz[currant_question] = normalized_answer
     print(f' нормализация ответа - {normalized_answer}')
-
-    #print((redis_db.get(id)).decode('utf-8'))
     return currant_question
 
 
@@ -70,10 +60,6 @@ def handle_new_question_request(update, context):
     currant_user_id = update.effective_chat.id
     quiz_dict_question = context.bot_data['quiz_dict_question']
     redis_db = context.bot_data['redis_db']
-    users_question = redis_db.get(currant_user_id)
-    #answer = quiz_dict_question[users_question]
-    #print(f'сохраненный users_question - {users_question}')
-    #logging.info(f'в функцию echo передан словарь {quiz_dict_question}')
 
     question = get_question(quiz_dict_question, currant_user_id, redis_db)
     context.bot.send_message(
@@ -97,18 +83,19 @@ def surender(update, context):
     context.bot.send_message(
         chat_id=currant_user_id,
         text=question)
-
     return QUIZ_KEYBOARD
+
 
 def get_count(update, context):
     currant_user_id = update.effective_chat.id
-    text = 'Я чувствую мощь тёмной стороны!'
+    text = f'Ваш счет - {ANSWERS_COUNT}'
     context.bot.send_message(
         chat_id=currant_user_id,
         text=text)
 
 
 def handle_solution_attempt(update, context):
+    global ANSWERS_COUNT
     currant_user_id = update.effective_chat.id
     user_message = update.message.text
     quiz_dict_question = context.bot_data['quiz_dict_question']
@@ -116,12 +103,11 @@ def handle_solution_attempt(update, context):
     users_question = redis_db.get(currant_user_id)
     answer = quiz_dict_question[users_question]
 
-    #print(f' проверка ответа - {answer}')
-    #print(f' проверка ответа - {user_message}')
     if user_message == answer:
         bot_answer = 'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
         get_question(quiz_dict_question, currant_user_id, redis_db,
                                 users_question)
+        ANSWERS_COUNT += 1
     else:
         bot_answer = 'Неправильно… Попробуешь ещё раз?'
 
@@ -129,7 +115,6 @@ def handle_solution_attempt(update, context):
         chat_id=update.effective_chat.id,
         text=bot_answer)
     return QUIZ_KEYBOARD
-
 
 
 def main():
@@ -163,7 +148,6 @@ def main():
                                 MessageHandler(Filters.regex('.*'),
                                                handle_solution_attempt)
                                 ],
-                #CHECK_ANSWER: [MessageHandler(Filters.regex('.*'), handle_solution_attempt)],
             },
             fallbacks=[CommandHandler("end", end)],)
 
