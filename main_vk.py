@@ -1,40 +1,39 @@
-import re
-
-import redis
 import logging
-import vk_api
-from vk_api.keyboard import VkKeyboard, VkKeyboardColor
-from vk_api.longpoll import VkLongPoll, VkEventType
-from environs import Env
 import random
+import re
 from pathlib import Path
 
-from prepare_quiz import get_splitted_strings_from_file, create_dict_quiz
+import redis
+import vk_api
+from environs import Env
+from vk_api.keyboard import VkKeyboard, VkKeyboardColor
+from vk_api.longpoll import VkEventType, VkLongPoll
 
+from prepare_quiz import create_dict_quiz, get_splitted_strings_from_file
 
 ANSWERS_COUNT = 0
 
 
-def get_question(quiz, id, redis_db, old_key=None):
+def get_question(quiz, use_id, redis_db, old_key=None):
     if old_key:
         try:
             quiz.pop(old_key)
         except Exception as error:
-            print(error)
+            logging.error(error)
     currant_question = next(iter(quiz))
-    redis_db.set(id, currant_question)
-    print(f'Выборка вопроса - {currant_question}')
+    redis_db.set(use_id, currant_question)
+    logging.info(f'Выборка вопроса - {currant_question}')
 
     normalized_answer = re.split(r'\.', quiz[currant_question], maxsplit=1)[0]
     normalized_answer = re.split(r'\(', normalized_answer, maxsplit=1)[0]
     normalized_answer = re.sub(r'[\'\"]', '', normalized_answer).lower()
     quiz[currant_question] = normalized_answer
-    print(f' нормализация ответа - {normalized_answer}')
+    logging.info(f' нормализация ответа - {normalized_answer}')
     return currant_question
 
 
 def handle_new_question_request(event, vk_bot, quiz_dict_question, redis_db):
-    print(event.__dict__)
+    logging.info(f'в ivent лежит {event.__dict__}')
     currant_user_id = event.user_id
     question = get_question(quiz_dict_question, currant_user_id, redis_db)
 
@@ -55,7 +54,7 @@ def surender(event, vk_bot, quiz_dict_question, redis_db):
         random_id=random.randint(1, 1000))
     question = get_question(quiz_dict_question, currant_user_id, redis_db,
                             users_question)
-    print(f'новый вопрос - {question}')
+    logging.info(f'новый вопрос - {question}')
     vk_bot.messages.send(
         user_id=currant_user_id,
         message=question,
@@ -79,7 +78,9 @@ def handle_solution_attempt(event, vk_bot, quiz_dict_question, redis_db):
     answer = quiz_dict_question[users_question]
 
     if user_message == answer:
-        bot_answer = 'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
+        bot_answer = (
+            'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
+        )
         get_question(quiz_dict_question, currant_user_id, redis_db,
                                 users_question)
         ANSWERS_COUNT += 1
@@ -114,7 +115,7 @@ def main():
         keyboard.add_button('Новый вопрос', color=VkKeyboardColor.PRIMARY)
         keyboard.add_button('Сдаться', color=VkKeyboardColor.NEGATIVE)
 
-        keyboard.add_line()  # Переход на вторую строку
+        keyboard.add_line()
         keyboard.add_button('Мой счёт', color=VkKeyboardColor.PRIMARY)
 
         vk_bot.messages.send(

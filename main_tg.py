@@ -1,14 +1,15 @@
 import logging
 import re
-import redis
 from pathlib import Path
-from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
-                          ConversationHandler, CallbackQueryHandler, RegexHandler)
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
+
+import redis
 from environs import Env
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.ext import (CommandHandler,
+                          ConversationHandler, Filters, MessageHandler,
+                          Updater)
 
-from prepare_quiz import get_splitted_strings_from_file, create_dict_quiz
-
+from prepare_quiz import create_dict_quiz, get_splitted_strings_from_file
 
 HELP, QUIZ_KEYBOARD, CHECK_ANSWER = range(3)
 ANSWERS_COUNT = 0
@@ -46,13 +47,13 @@ def get_question(quiz, id, redis_db, old_key=None):
             print(error)
     currant_question = next(iter(quiz))
     redis_db.set(id, currant_question)
-    print(f'Выборка вопроса - {currant_question}')
+    logging.info(f'Выборка вопроса - {currant_question}')
 
     normalized_answer = re.split(r'\.', quiz[currant_question], maxsplit=1)[0]
     normalized_answer = re.split(r'\(', normalized_answer, maxsplit=1)[0]
     normalized_answer = re.sub(r'[\'\"]', '', normalized_answer).lower()
     quiz[currant_question] = normalized_answer
-    print(f' нормализация ответа - {normalized_answer}')
+    logging.info(f' нормализация ответа - {normalized_answer}')
     return currant_question
 
 
@@ -104,9 +105,11 @@ def handle_solution_attempt(update, context):
     answer = quiz_dict_question[users_question]
 
     if user_message == answer:
-        bot_answer = 'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
+        bot_answer = (
+            'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
+        )
         get_question(quiz_dict_question, currant_user_id, redis_db,
-                                users_question)
+                     users_question)
         ANSWERS_COUNT += 1
     else:
         bot_answer = 'Неправильно… Попробуешь ещё раз?'
@@ -121,7 +124,8 @@ def main():
     env = Env()
     env.read_env()
 
-    redis_db = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+    redis_db = redis.Redis(host='localhost', port=6379,
+                           db=0, decode_responses=True)
 
     quiz_folder = 'quiz-questions'
     quiz_file = 'idv10.txt'
@@ -136,15 +140,18 @@ def main():
         dispatcher = updater.dispatcher
         bot_data = {
             'quiz_dict_question': quiz_dict_question,
-            'redis_db': redis_db,}
+            'redis_db': redis_db}
 
         conv_handler = ConversationHandler(
             entry_points=[CommandHandler("start", start)],
             states={
                 QUIZ_KEYBOARD: [CommandHandler("end", end),
-                                MessageHandler(Filters.regex('^(Новый вопрос)$'), handle_new_question_request),
-                                MessageHandler(Filters.regex('^(Сдаться)$'), surender),
-                                MessageHandler(Filters.regex('^(Мой счёт)$'), get_count),
+                                MessageHandler(Filters.regex('^(Новый вопрос)$'),
+                                               handle_new_question_request),
+                                MessageHandler(Filters.regex('^(Сдаться)$'),
+                                               surender),
+                                MessageHandler(Filters.regex('^(Мой счёт)$'),
+                                               get_count),
                                 MessageHandler(Filters.regex('.*'),
                                                handle_solution_attempt)
                                 ],
