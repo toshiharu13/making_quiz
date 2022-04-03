@@ -9,6 +9,8 @@
 ```shell
 git clone https://github.com/toshiharu13/making_quiz.git
 ```
+ - установить и запустить [Redis](https://realpython.com/python-redis/)
+
  - Установить requirements.txt
 ```shell
 pip install -r requirements.txt
