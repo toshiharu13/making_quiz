@@ -118,12 +118,6 @@ def main():
         keyboard.add_line()
         keyboard.add_button('Мой счёт', color=VkKeyboardColor.PRIMARY)
 
-        vk_bot.messages.send(
-            peer_id=env.str('USER_ID'),
-            random_id=random.randint(1, 1000),
-            keyboard=keyboard.get_keyboard(),
-            message=' Да прибудет с тобой сила!')
-
         for event in longpoll.listen():
             if event.type == VkEventType.MESSAGE_NEW and event.to_me:
                 if event.text == 'Новый вопрос':
