@@ -141,5 +141,4 @@ if __name__ == '__main__':
         filename='logs.lod',
         filemode='w',
     )
-    logger = logging.getLogger(__name__)
     main()
