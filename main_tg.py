@@ -134,7 +134,7 @@ def main():
                            db=0, decode_responses=True)
 
     quiz_folder = 'quiz-questions'
-    quiz_file = 'idv10.txt'
+    quiz_file = env.str('QUIZ_FILE')
     quiz_full_path = Path.cwd()/quiz_folder/quiz_file
     tg_bot_key = env.str('TG_BOT_KEY')
 

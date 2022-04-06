@@ -107,7 +107,7 @@ def main():
     redis_db = redis.Redis(host='localhost', port=6379, db=0,
                            decode_responses=True)
     quiz_folder = 'quiz-questions'
-    quiz_file = 'idv10.txt'
+    quiz_file = env.str('QUIZ_FILE')
     quiz_full_path = Path.cwd() / quiz_folder / quiz_file
     vk_session = vk_api.VkApi(token=env.str('VK_API_KEY'))
     vk_bot = vk_session.get_api()
