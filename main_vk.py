@@ -33,10 +33,10 @@ def get_question(quiz, use_id, redis_db, old_key=None):
     return currant_question
 
 
-def handle_new_question_request(event, vk_bot, quiz_dict_question, redis_db):
+def handle_new_question_request(event, vk_bot, normalized_quiz_question, redis_db):
     logger.info(f'в ivent лежит {event.__dict__}')
     currant_user_id = event.user_id
-    question = get_question(quiz_dict_question, currant_user_id, redis_db)
+    question = get_question(normalized_quiz_question, currant_user_id, redis_db)
 
     vk_bot.messages.send(
         user_id=currant_user_id,
@@ -44,16 +44,16 @@ def handle_new_question_request(event, vk_bot, quiz_dict_question, redis_db):
         random_id=random.randint(1, 1000))
 
 
-def surender(event, vk_bot, quiz_dict_question, redis_db):
+def surender(event, vk_bot, normalized_quiz_question, redis_db):
     currant_user_id = event.user_id
     users_question = redis_db.get(currant_user_id)
-    answer = quiz_dict_question[users_question]
+    answer = normalized_quiz_question[users_question]
     text = f'Здесь империя вынуждена отступить! Ответ - {answer}'
     vk_bot.messages.send(
         user_id=currant_user_id,
         message=text,
         random_id=random.randint(1, 1000))
-    question = get_question(quiz_dict_question, currant_user_id, redis_db,
+    question = get_question(normalized_quiz_question, currant_user_id, redis_db,
                             users_question)
     logger.info(f'новый вопрос - {question}')
     vk_bot.messages.send(
@@ -71,19 +71,19 @@ def get_count(event, vk_bot):
         random_id=random.randint(1, 1000))
 
 
-def handle_solution_attempt(event, vk_bot, quiz_dict_question, redis_db):
+def handle_solution_attempt(event, vk_bot, normalized_quiz_question, redis_db):
     global ANSWERS_COUNT
     currant_user_id = event.user_id
     user_message = event.text
     users_question = redis_db.get(currant_user_id)
-    answer = quiz_dict_question[users_question]
+    answer = normalized_quiz_question[users_question]
 
     if user_message == answer:
         bot_answer = (
             'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
         )
-        get_question(quiz_dict_question, currant_user_id, redis_db,
-                                users_question)
+        get_question(normalized_quiz_question, currant_user_id, redis_db,
+                     users_question)
         ANSWERS_COUNT += 1
     else:
         bot_answer = 'Неправильно… Попробуешь ещё раз?'
@@ -114,7 +114,7 @@ def main():
     longpoll = VkLongPoll(vk_session)
 
     splitted_strings = get_splitted_strings_from_file(quiz_full_path)
-    quiz_dict_question = normalize_quiz(splitted_strings)
+    normalized_quiz_question = normalize_quiz(splitted_strings)
 
     try:
         keyboard = VkKeyboard(one_time=False)
@@ -129,13 +129,13 @@ def main():
             if event.type == VkEventType.MESSAGE_NEW and event.to_me:
                 if event.text == 'Новый вопрос':
                     handle_new_question_request(event, vk_bot,
-                                                quiz_dict_question, redis_db)
+                                                normalized_quiz_question, redis_db)
                 elif event.text == "Сдаться":
-                    surender(event, vk_bot, quiz_dict_question, redis_db)
+                    surender(event, vk_bot, normalized_quiz_question, redis_db)
                 elif event.text == "Мой счёт":
                     get_count(event, vk_bot)
                 else:
-                    handle_solution_attempt(event, vk_bot, quiz_dict_question,
+                    handle_solution_attempt(event, vk_bot, normalized_quiz_question,
                                             redis_db)
     except Exception as error:
         logger.error(f'Бот упал с ошибкой - {error}')

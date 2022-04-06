@@ -4,7 +4,8 @@ import re
 
 def get_additional_split(string):
     logging.info(f'функция {get_additional_split.__name__} принимает {string}')
-    result = re.split(r'\n', string, maxsplit=1)
+    # result = re.split(r'\n', string, maxsplit=1)
+    result = string.split('\n', 1)
     cleared_string = result[1]
     logging.info(
         f'функция {get_additional_split.__name__} возвращает {cleared_string}')
@@ -22,12 +23,8 @@ def normalize_quiz(splitted_quiz):
             continue
         if re.match(r'Ответ:', question_block):
             answer = get_additional_split(question_block)
-            try:
-                normalized_quiz[question] = answer
-                question, answer = '', ''
-            except BaseException as error:
-                logging.error(
-                    f'Ошибка при нормализации данных викторины {error}')
+            normalized_quiz[question] = answer
+            question, answer = '', ''
     logging.info(
         f'функция {normalize_quiz.__name__} возвращает {normalized_quiz}')
     return normalized_quiz
@@ -38,8 +35,9 @@ def get_splitted_strings_from_file(file):
         f'в функцию {get_splitted_strings_from_file.__name__} передан {file}')
     with open(file, 'r', encoding='KOI8-R') as quiz_file:
         file_content = quiz_file.read()
-        patern = re.compile("\n\n")
-        splitted_quiz = patern.split(file_content)
+        # patern = re.compile("\n\n")
+        # splitted_quiz = patern.split(file_content)
+        splitted_quiz = file_content.split('\n\n')
         logging.info(f'функция {get_splitted_strings_from_file.__name__} '
                      f'возвращает {splitted_quiz}')
         return splitted_quiz
