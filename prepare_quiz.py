@@ -36,11 +36,3 @@ def get_splitted_strings_from_file(file):
         splitted_string = patern.split(file_content)
         logging.info(f'возвращаем {splitted_string}')
         return splitted_string
-
-
-logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s; %(levelname)s; %(name)s; %(message)s',
-        filename='logs.lod',
-        filemode='w',
-    )
