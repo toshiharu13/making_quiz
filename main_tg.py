@@ -13,6 +13,7 @@ from prepare_quiz import create_dict_quiz, get_splitted_strings_from_file
 
 HELP, QUIZ_KEYBOARD, CHECK_ANSWER = range(3)
 ANSWERS_COUNT = 0
+logger = logging.getLogger(__name__)
 
 
 def start(update, context):
@@ -31,7 +32,6 @@ def end(update, context):
     message_text = 'Заходите ещё!'
     reply_markup = ReplyKeyboardRemove()
     chat_id = update.effective_chat.id
-    print(message_text)
     context.bot.send_message(
         chat_id=chat_id,
         text=message_text,
@@ -47,13 +47,13 @@ def get_question(quiz, id, redis_db, old_key=None):
             print(error)
     currant_question = next(iter(quiz))
     redis_db.set(id, currant_question)
-    logging.info(f'Выборка вопроса - {currant_question}')
+    logger.info(f'Выборка вопроса - {currant_question}')
 
     normalized_answer = re.split(r'\.', quiz[currant_question], maxsplit=1)[0]
     normalized_answer = re.split(r'\(', normalized_answer, maxsplit=1)[0]
     normalized_answer = re.sub(r'[\'\"]', '', normalized_answer).lower()
     quiz[currant_question] = normalized_answer
-    logging.info(f' нормализация ответа - {normalized_answer}')
+    logger.info(f' нормализация ответа - {normalized_answer}')
     return currant_question
 
 
@@ -124,6 +124,12 @@ def main():
     env = Env()
     env.read_env()
 
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s; %(levelname)s; %(name)s; %(message)s',
+        filename='logs.lod',
+        filemode='w',
+    )
     redis_db = redis.Redis(host='localhost', port=6379,
                            db=0, decode_responses=True)
 
@@ -165,14 +171,8 @@ def main():
         updater.idle()
 
     except Exception as error:
-        logging.error(f'Бот упал с ошибкой - {error}')
+        logger.error(f'Бот упал с ошибкой - {error}')
 
 
 if __name__ == '__main__':
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s; %(levelname)s; %(name)s; %(message)s',
-        filename='logs.lod',
-        filemode='w',
-    )
     main()

@@ -12,6 +12,7 @@ from vk_api.longpoll import VkEventType, VkLongPoll
 from prepare_quiz import create_dict_quiz, get_splitted_strings_from_file
 
 ANSWERS_COUNT = 0
+logger = logging.getLogger(__name__)
 
 
 def get_question(quiz, use_id, redis_db, old_key=None):
@@ -22,18 +23,18 @@ def get_question(quiz, use_id, redis_db, old_key=None):
             logging.error(error)
     currant_question = next(iter(quiz))
     redis_db.set(use_id, currant_question)
-    logging.info(f'Выборка вопроса - {currant_question}')
+    logger.info(f'Выборка вопроса - {currant_question}')
 
     normalized_answer = re.split(r'\.', quiz[currant_question], maxsplit=1)[0]
     normalized_answer = re.split(r'\(', normalized_answer, maxsplit=1)[0]
     normalized_answer = re.sub(r'[\'\"]', '', normalized_answer).lower()
     quiz[currant_question] = normalized_answer
-    logging.info(f' нормализация ответа - {normalized_answer}')
+    logger.info(f' нормализация ответа - {normalized_answer}')
     return currant_question
 
 
 def handle_new_question_request(event, vk_bot, quiz_dict_question, redis_db):
-    logging.info(f'в ivent лежит {event.__dict__}')
+    logger.info(f'в ivent лежит {event.__dict__}')
     currant_user_id = event.user_id
     question = get_question(quiz_dict_question, currant_user_id, redis_db)
 
@@ -54,7 +55,7 @@ def surender(event, vk_bot, quiz_dict_question, redis_db):
         random_id=random.randint(1, 1000))
     question = get_question(quiz_dict_question, currant_user_id, redis_db,
                             users_question)
-    logging.info(f'новый вопрос - {question}')
+    logger.info(f'новый вопрос - {question}')
     vk_bot.messages.send(
         user_id=currant_user_id,
         message=question,
@@ -97,6 +98,12 @@ def main():
     env = Env()
     env.read_env()
 
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s; %(levelname)s; %(name)s; %(message)s',
+        filename='logs.lod',
+        filemode='w',
+    )
     redis_db = redis.Redis(host='localhost', port=6379, db=0,
                            decode_responses=True)
     quiz_folder = 'quiz-questions'
@@ -131,14 +138,8 @@ def main():
                     handle_solution_attempt(event, vk_bot, quiz_dict_question,
                                             redis_db)
     except Exception as error:
-        logging.error(f'Бот упал с ошибкой - {error}')
+        logger.error(f'Бот упал с ошибкой - {error}')
 
 
 if __name__ == '__main__':
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s; %(levelname)s; %(name)s; %(message)s',
-        filename='logs.lod',
-        filemode='w',
-    )
     main()
