@@ -9,7 +9,7 @@ from telegram.ext import (CommandHandler,
                           ConversationHandler, Filters, MessageHandler,
                           Updater)
 
-from prepare_quiz import create_dict_quiz, get_splitted_strings_from_file
+from prepare_quiz import normalize_quiz, get_splitted_strings_from_file
 
 HELP, QUIZ_KEYBOARD, CHECK_ANSWER = range(3)
 ANSWERS_COUNT = 0
@@ -59,10 +59,10 @@ def get_question(quiz, id, redis_db, old_key=None):
 
 def handle_new_question_request(update, context):
     currant_user_id = update.effective_chat.id
-    quiz_dict_question = context.bot_data['quiz_dict_question']
+    normalized_quiz_question = context.bot_data['normalized_quiz_question']
     redis_db = context.bot_data['redis_db']
 
-    question = get_question(quiz_dict_question, currant_user_id, redis_db)
+    question = get_question(normalized_quiz_question, currant_user_id, redis_db)
     context.bot.send_message(
         chat_id=currant_user_id,
         text=question)
@@ -71,15 +71,15 @@ def handle_new_question_request(update, context):
 
 def surender(update, context):
     currant_user_id = update.effective_chat.id
-    quiz_dict_question = context.bot_data['quiz_dict_question']
+    normalized_quiz_question = context.bot_data['normalized_quiz_question']
     redis_db = context.bot_data['redis_db']
     users_question = redis_db.get(currant_user_id)
-    answer = quiz_dict_question[users_question]
+    answer = normalized_quiz_question[users_question]
     text = f'Здесь империя вынуждена отступить! Ответ - {answer}'
     context.bot.send_message(
         chat_id=currant_user_id,
         text=text)
-    question = get_question(quiz_dict_question, currant_user_id, redis_db,
+    question = get_question(normalized_quiz_question, currant_user_id, redis_db,
                             users_question)
     context.bot.send_message(
         chat_id=currant_user_id,
@@ -99,16 +99,16 @@ def handle_solution_attempt(update, context):
     global ANSWERS_COUNT
     currant_user_id = update.effective_chat.id
     user_message = update.message.text
-    quiz_dict_question = context.bot_data['quiz_dict_question']
+    normalized_quiz_question = context.bot_data['normalized_quiz_question']
     redis_db = context.bot_data['redis_db']
     users_question = redis_db.get(currant_user_id)
-    answer = quiz_dict_question[users_question]
+    answer = normalized_quiz_question[users_question]
 
     if user_message == answer:
         bot_answer = (
             'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
         )
-        get_question(quiz_dict_question, currant_user_id, redis_db,
+        get_question(normalized_quiz_question, currant_user_id, redis_db,
                      users_question)
         ANSWERS_COUNT += 1
     else:
@@ -139,13 +139,13 @@ def main():
     tg_bot_key = env.str('TG_BOT_KEY')
 
     splitted_strings = get_splitted_strings_from_file(quiz_full_path)
-    quiz_dict_question = create_dict_quiz(splitted_strings)
+    normalized_quiz_question = normalize_quiz(splitted_strings)
 
     try:
         updater = Updater(tg_bot_key)
         dispatcher = updater.dispatcher
         bot_data = {
-            'quiz_dict_question': quiz_dict_question,
+            'normalized_quiz_question': normalized_quiz_question,
             'redis_db': redis_db}
 
         conv_handler = ConversationHandler(

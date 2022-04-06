@@ -9,7 +9,7 @@ from environs import Env
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkEventType, VkLongPoll
 
-from prepare_quiz import create_dict_quiz, get_splitted_strings_from_file
+from prepare_quiz import normalize_quiz, get_splitted_strings_from_file
 
 ANSWERS_COUNT = 0
 logger = logging.getLogger(__name__)
@@ -114,7 +114,7 @@ def main():
     longpoll = VkLongPoll(vk_session)
 
     splitted_strings = get_splitted_strings_from_file(quiz_full_path)
-    quiz_dict_question = create_dict_quiz(splitted_strings)
+    quiz_dict_question = normalize_quiz(splitted_strings)
 
     try:
         keyboard = VkKeyboard(one_time=False)
