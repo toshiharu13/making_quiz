@@ -45,7 +45,7 @@ def get_question(quiz, id, redis_db, old_key=None):
         try:
             quiz.pop(old_key)
         except Exception as error:
-            print(error)
+            logger.error(f'Ошибка при переходе на следующий вопрос {error}')
     currant_question = next(iter(quiz))
     redis_db.set(id, currant_question)
     logger.info(f'Выборка вопроса - {currant_question}')
