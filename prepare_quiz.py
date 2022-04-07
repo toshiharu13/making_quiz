@@ -25,7 +25,12 @@ def normalize_quiz(splitted_quiz):
             continue
         if re.match(r'Ответ:', question_block):
             answer = get_additional_split(question_block)
-            normalized_quiz[question] = answer
+
+            normalized_answer = re.split(r'\.', answer, maxsplit=1)[0]
+            normalized_answer = re.split(r'\(', normalized_answer, maxsplit=1)[0]
+            normalized_answer = re.sub(r'[\'\"]', '', normalized_answer).lower()
+
+            normalized_quiz[question] = normalized_answer
             question, answer = '', ''
     logger.info(
         f'функция {normalize_quiz.__name__} возвращает {normalized_quiz}')
