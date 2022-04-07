@@ -104,7 +104,9 @@ def main():
         filename='logs.lod',
         filemode='w',
     )
-    redis_db = redis.Redis(host='localhost', port=6379, db=0,
+    redis_db = redis.Redis(host=env.str('REDIS_HOST', 'localhost'),
+                           port=env.int('REDIS_PORT', 6379),
+                           db=env.str('REDIS_DB', 0),
                            decode_responses=True)
     quiz_folder = 'quiz-questions'
     quiz_file = env.str('QUIZ_FILE')
