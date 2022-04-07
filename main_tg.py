@@ -10,6 +10,7 @@ from telegram.ext import (CommandHandler,
                           Updater)
 
 from prepare_quiz import normalize_quiz, get_splitted_strings_from_file
+from prepare_question import get_question
 
 HELP, QUIZ_KEYBOARD, CHECK_ANSWER = range(3)
 ANSWERS_COUNT = 0
@@ -38,24 +39,6 @@ def end(update, context):
         text=message_text,
         reply_markup=reply_markup)
     return ConversationHandler.END
-
-
-def get_question(quiz, id, redis_db, old_key=None):
-    if old_key:
-        try:
-            quiz.pop(old_key)
-        except Exception as error:
-            logger.error(f'Ошибка при переходе на следующий вопрос {error}')
-    currant_question = next(iter(quiz))
-    redis_db.set(id, currant_question)
-    logger.info(f'Выборка вопроса - {currant_question}')
-
-    normalized_answer = re.split(r'\.', quiz[currant_question], maxsplit=1)[0]
-    normalized_answer = re.split(r'\(', normalized_answer, maxsplit=1)[0]
-    normalized_answer = re.sub(r'[\'\"]', '', normalized_answer).lower()
-    quiz[currant_question] = normalized_answer
-    logger.info(f' нормализация ответа - {normalized_answer}')
-    return currant_question
 
 
 def handle_new_question_request(update, context):

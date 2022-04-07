@@ -10,27 +10,11 @@ from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkEventType, VkLongPoll
 
 from prepare_quiz import normalize_quiz, get_splitted_strings_from_file
+from prepare_question import get_question
+
 
 ANSWERS_COUNT = 0
 logger = logging.getLogger(__name__)
-
-
-def get_question(quiz, use_id, redis_db, old_key=None):
-    if old_key:
-        try:
-            quiz.pop(old_key)
-        except Exception as error:
-            logging.error(error)
-    currant_question = next(iter(quiz))
-    redis_db.set(use_id, currant_question)
-    logger.info(f'Выборка вопроса - {currant_question}')
-
-    normalized_answer = re.split(r'\.', quiz[currant_question], maxsplit=1)[0]
-    normalized_answer = re.split(r'\(', normalized_answer, maxsplit=1)[0]
-    normalized_answer = re.sub(r'[\'\"]', '', normalized_answer).lower()
-    quiz[currant_question] = normalized_answer
-    logger.info(f' нормализация ответа - {normalized_answer}')
-    return currant_question
 
 
 def handle_new_question_request(event, vk_bot, normalized_quiz_question, redis_db):
