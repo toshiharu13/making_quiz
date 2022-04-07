@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 def get_additional_split(string):
     logging.info(f'функция {get_additional_split.__name__} принимает {string}')
-    # result = re.split(r'\n', string, maxsplit=1)
     result = string.split('\n', 1)
     cleared_string = result[1]
     logger.info(
@@ -38,8 +37,6 @@ def get_splitted_strings_from_file(file):
         f'в функцию {get_splitted_strings_from_file.__name__} передан {file}')
     with open(file, 'r', encoding='KOI8-R') as quiz_file:
         file_content = quiz_file.read()
-        # patern = re.compile("\n\n")
-        # splitted_quiz = patern.split(file_content)
         splitted_quiz = file_content.split('\n\n')
         logger.info(f'функция {get_splitted_strings_from_file.__name__} '
                      f'возвращает {splitted_quiz}')

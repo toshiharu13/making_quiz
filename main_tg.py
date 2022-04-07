@@ -1,5 +1,4 @@
 import logging
-import re
 from pathlib import Path
 
 import redis
@@ -13,14 +12,15 @@ from prepare_quiz import normalize_quiz, get_splitted_strings_from_file
 from prepare_question import get_question
 
 HELP, QUIZ_KEYBOARD, CHECK_ANSWER = range(3)
-ANSWERS_COUNT = 0
 logger = logging.getLogger(__name__)
 
 
 def start(update, context):
     currant_user_id = update.effective_chat.id
     redis_db = context.bot_data['redis_db']
+    count_key = f'{currant_user_id}_count'
     redis_db.delete(currant_user_id)
+    redis_db.set(count_key, 0)
 
     custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счёт']]
 
@@ -73,15 +73,18 @@ def surender(update, context):
 
 def get_count(update, context):
     currant_user_id = update.effective_chat.id
-    text = f'Ваш счет - {ANSWERS_COUNT}'
+    redis_db = context.bot_data['redis_db']
+    count_key = f'{currant_user_id}_count'
+    text = f'Ваш счет - {redis_db.get(count_key)}'
     context.bot.send_message(
         chat_id=currant_user_id,
         text=text)
 
 
 def handle_solution_attempt(update, context):
-    global ANSWERS_COUNT
+    #global ANSWERS_COUNT
     currant_user_id = update.effective_chat.id
+    count_key = f'{currant_user_id}_count'
     user_message = update.message.text
     normalized_quiz_question = context.bot_data['normalized_quiz_question']
     redis_db = context.bot_data['redis_db']
@@ -94,7 +97,8 @@ def handle_solution_attempt(update, context):
         )
         get_question(normalized_quiz_question, currant_user_id, redis_db,
                      users_question)
-        ANSWERS_COUNT += 1
+        new_score = int(redis_db.get(count_key)) + 1
+        redis_db.set(count_key, new_score)
     else:
         bot_answer = 'Неправильно… Попробуешь ещё раз?'
 

@@ -1,6 +1,5 @@
 import logging
 import random
-import re
 from pathlib import Path
 
 import redis
@@ -13,8 +12,18 @@ from prepare_quiz import normalize_quiz, get_splitted_strings_from_file
 from prepare_question import get_question
 
 
-ANSWERS_COUNT = 0
 logger = logging.getLogger(__name__)
+
+
+def start(event, vk_bot, redis_db):
+    currant_user_id = event.user_id
+    count_key = f'{currant_user_id}_count'
+    redis_db.delete(currant_user_id)
+    redis_db.set(count_key, 0)
+    vk_bot.messages.send(
+        user_id=currant_user_id,
+        message='Я чувствую возмущение силы!',
+        random_id=random.randint(1, 1000))
 
 
 def handle_new_question_request(event, vk_bot, normalized_quiz_question, redis_db):
@@ -46,9 +55,10 @@ def surender(event, vk_bot, normalized_quiz_question, redis_db):
         random_id=random.randint(1, 1000))
 
 
-def get_count(event, vk_bot):
+def get_count(event, vk_bot, redis_db):
     currant_user_id = event.user_id
-    message_text = f'Ваш счет - {ANSWERS_COUNT}'
+    count_key = f'{currant_user_id}_count'
+    message_text = f'Ваш счет - {redis_db.get(count_key)}'
     vk_bot.messages.send(
         user_id=currant_user_id,
         message=message_text,
@@ -56,8 +66,8 @@ def get_count(event, vk_bot):
 
 
 def handle_solution_attempt(event, vk_bot, normalized_quiz_question, redis_db):
-    global ANSWERS_COUNT
     currant_user_id = event.user_id
+    count_key = f'{currant_user_id}_count'
     user_message = event.text
     users_question = redis_db.get(currant_user_id)
     answer = normalized_quiz_question[users_question]
@@ -68,7 +78,8 @@ def handle_solution_attempt(event, vk_bot, normalized_quiz_question, redis_db):
         )
         get_question(normalized_quiz_question, currant_user_id, redis_db,
                      users_question)
-        ANSWERS_COUNT += 1
+        new_score = int(redis_db.get(count_key)) + 1
+        redis_db.set(count_key, new_score)
     else:
         bot_answer = 'Неправильно… Попробуешь ещё раз?'
 
@@ -110,13 +121,15 @@ def main():
 
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
-            if event.text == 'Новый вопрос':
+            if event.text == '/start':
+                start(event, vk_bot, redis_db)
+            elif event.text == 'Новый вопрос':
                 handle_new_question_request(event, vk_bot,
                                             normalized_quiz_question, redis_db)
             elif event.text == "Сдаться":
                 surender(event, vk_bot, normalized_quiz_question, redis_db)
             elif event.text == "Мой счёт":
-                get_count(event, vk_bot)
+                get_count(event, vk_bot, redis_db)
             else:
                 handle_solution_attempt(event, vk_bot, normalized_quiz_question,
                                         redis_db)
