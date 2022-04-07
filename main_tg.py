@@ -17,8 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 def start(update, context):
+    currant_user_id = update.effective_chat.id
     redis_db = context.bot_data['redis_db']
-    redis_db.flushdb()
+    redis_db.delete(currant_user_id)
 
     custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счёт']]
 
