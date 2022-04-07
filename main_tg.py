@@ -143,37 +143,33 @@ def main():
     splitted_strings = get_splitted_strings_from_file(quiz_full_path)
     normalized_quiz_question = normalize_quiz(splitted_strings)
 
-    try:
-        updater = Updater(tg_bot_key)
-        dispatcher = updater.dispatcher
-        bot_data = {
-            'normalized_quiz_question': normalized_quiz_question,
-            'redis_db': redis_db}
+    updater = Updater(tg_bot_key)
+    dispatcher = updater.dispatcher
+    bot_data = {
+        'normalized_quiz_question': normalized_quiz_question,
+        'redis_db': redis_db}
 
-        conv_handler = ConversationHandler(
-            entry_points=[CommandHandler("start", start)],
-            states={
-                QUIZ_KEYBOARD: [CommandHandler("end", end),
-                                MessageHandler(Filters.regex('^(Новый вопрос)$'),
-                                               handle_new_question_request),
-                                MessageHandler(Filters.regex('^(Сдаться)$'),
-                                               surender),
-                                MessageHandler(Filters.regex('^(Мой счёт)$'),
-                                               get_count),
-                                MessageHandler(Filters.regex('.*'),
-                                               handle_solution_attempt)
-                                ],
-            },
-            fallbacks=[CommandHandler("end", end)],)
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
+        states={
+            QUIZ_KEYBOARD: [CommandHandler("end", end),
+                            MessageHandler(Filters.regex('^(Новый вопрос)$'),
+                                           handle_new_question_request),
+                            MessageHandler(Filters.regex('^(Сдаться)$'),
+                                           surender),
+                            MessageHandler(Filters.regex('^(Мой счёт)$'),
+                                           get_count),
+                            MessageHandler(Filters.regex('.*'),
+                                           handle_solution_attempt)
+                            ],
+        },
+        fallbacks=[CommandHandler("end", end)],)
 
-        dispatcher.add_handler(conv_handler)
-        dispatcher.bot_data = bot_data
+    dispatcher.add_handler(conv_handler)
+    dispatcher.bot_data = bot_data
 
-        updater.start_polling()
-        updater.idle()
-
-    except Exception as error:
-        logger.error(f'Бот упал с ошибкой - {error}')
+    updater.start_polling()
+    updater.idle()
 
 
 if __name__ == '__main__':

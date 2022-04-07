@@ -118,29 +118,24 @@ def main():
     splitted_strings = get_splitted_strings_from_file(quiz_full_path)
     normalized_quiz_question = normalize_quiz(splitted_strings)
 
-    try:
-        keyboard = VkKeyboard(one_time=False)
+    keyboard = VkKeyboard(one_time=False)
+    keyboard.add_button('Новый вопрос', color=VkKeyboardColor.PRIMARY)
+    keyboard.add_button('Сдаться', color=VkKeyboardColor.NEGATIVE)
+    keyboard.add_line()
+    keyboard.add_button('Мой счёт', color=VkKeyboardColor.PRIMARY)
 
-        keyboard.add_button('Новый вопрос', color=VkKeyboardColor.PRIMARY)
-        keyboard.add_button('Сдаться', color=VkKeyboardColor.NEGATIVE)
-
-        keyboard.add_line()
-        keyboard.add_button('Мой счёт', color=VkKeyboardColor.PRIMARY)
-
-        for event in longpoll.listen():
-            if event.type == VkEventType.MESSAGE_NEW and event.to_me:
-                if event.text == 'Новый вопрос':
-                    handle_new_question_request(event, vk_bot,
-                                                normalized_quiz_question, redis_db)
-                elif event.text == "Сдаться":
-                    surender(event, vk_bot, normalized_quiz_question, redis_db)
-                elif event.text == "Мой счёт":
-                    get_count(event, vk_bot)
-                else:
-                    handle_solution_attempt(event, vk_bot, normalized_quiz_question,
-                                            redis_db)
-    except Exception as error:
-        logger.error(f'Бот упал с ошибкой - {error}')
+    for event in longpoll.listen():
+        if event.type == VkEventType.MESSAGE_NEW and event.to_me:
+            if event.text == 'Новый вопрос':
+                handle_new_question_request(event, vk_bot,
+                                            normalized_quiz_question, redis_db)
+            elif event.text == "Сдаться":
+                surender(event, vk_bot, normalized_quiz_question, redis_db)
+            elif event.text == "Мой счёт":
+                get_count(event, vk_bot)
+            else:
+                handle_solution_attempt(event, vk_bot, normalized_quiz_question,
+                                        redis_db)
 
 
 if __name__ == '__main__':
