@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 def start(update, context):
-    currant_user_id = update.effective_chat.id
+    current_user_id = update.effective_chat.id
     redis_db = context.bot_data['redis_db']
-    count_key = f'{currant_user_id}_count'
-    redis_db.delete(currant_user_id)
+    count_key = f'{current_user_id}_count'
+    redis_db.delete(current_user_id)
     redis_db.set(count_key, 0)
 
     custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счёт']]
@@ -42,61 +42,61 @@ def end(update, context):
 
 
 def handle_new_question_request(update, context):
-    currant_user_id = update.effective_chat.id
+    current_user_id = update.effective_chat.id
     normalized_quiz_question = context.bot_data['normalized_quiz_question']
     redis_db = context.bot_data['redis_db']
-    users_question = redis_db.get(currant_user_id)
+    users_question = redis_db.get(current_user_id)
 
     question = get_question(normalized_quiz_question,
-                            currant_user_id, redis_db, users_question)
+                            current_user_id, redis_db, users_question)
     context.bot.send_message(
-        chat_id=currant_user_id,
+        chat_id=current_user_id,
         text=question)
     return QUIZ_KEYBOARD
 
 
 def surender(update, context):
-    currant_user_id = update.effective_chat.id
+    current_user_id = update.effective_chat.id
     normalized_quiz_question = context.bot_data['normalized_quiz_question']
     redis_db = context.bot_data['redis_db']
-    users_question = redis_db.get(currant_user_id)
+    users_question = redis_db.get(current_user_id)
     answer = normalized_quiz_question[users_question]
     text = f'Здесь империя вынуждена отступить! Ответ - {answer}'
     context.bot.send_message(
-        chat_id=currant_user_id,
+        chat_id=current_user_id,
         text=text)
-    question = get_question(normalized_quiz_question, currant_user_id, redis_db,
+    question = get_question(normalized_quiz_question, current_user_id, redis_db,
                             users_question, True)
     context.bot.send_message(
-        chat_id=currant_user_id,
+        chat_id=current_user_id,
         text=question)
     return QUIZ_KEYBOARD
 
 
 def get_count(update, context):
-    currant_user_id = update.effective_chat.id
+    current_user_id = update.effective_chat.id
     redis_db = context.bot_data['redis_db']
-    count_key = f'{currant_user_id}_count'
+    count_key = f'{current_user_id}_count'
     text = f'Ваш счет - {redis_db.get(count_key)}'
     context.bot.send_message(
-        chat_id=currant_user_id,
+        chat_id=current_user_id,
         text=text)
 
 
 def handle_solution_attempt(update, context):
-    currant_user_id = update.effective_chat.id
-    count_key = f'{currant_user_id}_count'
+    current_user_id = update.effective_chat.id
+    count_key = f'{current_user_id}_count'
     user_message = update.message.text
     normalized_quiz_question = context.bot_data['normalized_quiz_question']
     redis_db = context.bot_data['redis_db']
-    users_question = redis_db.get(currant_user_id)
+    users_question = redis_db.get(current_user_id)
     answer = normalized_quiz_question[users_question]
 
     if user_message == answer:
         bot_answer = (
             'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
         )
-        get_question(normalized_quiz_question, currant_user_id, redis_db,
+        get_question(normalized_quiz_question, current_user_id, redis_db,
                      users_question, True)
         new_score = int(redis_db.get(count_key)) + 1
         redis_db.set(count_key, new_score)

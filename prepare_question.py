@@ -9,11 +9,10 @@ def get_question(quiz, id, redis_db, old_key=None, jump=False):
         currant_question = old_key
     else:
         currant_question = all_keys[0]
-    currant_index = all_keys.index(currant_question)
 
     if jump:
+        currant_index = all_keys.index(currant_question)
         try:
-            #currant_index += 1
             currant_question = all_keys[currant_index+1]
         except IndexError:
             logger.info('вопросы закончились давайте подсчитаем очки')
