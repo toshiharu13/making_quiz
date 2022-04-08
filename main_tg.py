@@ -45,8 +45,10 @@ def handle_new_question_request(update, context):
     currant_user_id = update.effective_chat.id
     normalized_quiz_question = context.bot_data['normalized_quiz_question']
     redis_db = context.bot_data['redis_db']
+    users_question = redis_db.get(currant_user_id)
 
-    question = get_question(normalized_quiz_question, currant_user_id, redis_db)
+    question = get_question(normalized_quiz_question,
+                            currant_user_id, redis_db, users_question)
     context.bot.send_message(
         chat_id=currant_user_id,
         text=question)
@@ -64,7 +66,7 @@ def surender(update, context):
         chat_id=currant_user_id,
         text=text)
     question = get_question(normalized_quiz_question, currant_user_id, redis_db,
-                            users_question)
+                            users_question, True)
     context.bot.send_message(
         chat_id=currant_user_id,
         text=question)
@@ -82,7 +84,6 @@ def get_count(update, context):
 
 
 def handle_solution_attempt(update, context):
-    #global ANSWERS_COUNT
     currant_user_id = update.effective_chat.id
     count_key = f'{currant_user_id}_count'
     user_message = update.message.text
@@ -96,7 +97,7 @@ def handle_solution_attempt(update, context):
             'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
         )
         get_question(normalized_quiz_question, currant_user_id, redis_db,
-                     users_question)
+                     users_question, True)
         new_score = int(redis_db.get(count_key)) + 1
         redis_db.set(count_key, new_score)
     else:
