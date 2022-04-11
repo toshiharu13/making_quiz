@@ -36,10 +36,14 @@ def clear_base(event, vk_bot, redis_db):
         random_id=random.randint(1, 1000))
 
 
-def handle_new_question_request(event, vk_bot, normalized_quiz_question, redis_db):
+def handle_new_question_request(event, vk_bot,
+                                normalized_quiz_question, redis_db):
     logger.info(f'в event лежит {event.__dict__}')
     current_user_id = event.user_id
-    question = get_question(normalized_quiz_question, current_user_id, redis_db)
+    users_question = redis_db.get(current_user_id)
+    question = get_question(normalized_quiz_question, users_question)
+    if not users_question:
+        redis_db.set(current_user_id, question)
 
     vk_bot.messages.send(
         user_id=current_user_id,
@@ -56,8 +60,8 @@ def surender(event, vk_bot, normalized_quiz_question, redis_db):
         user_id=current_user_id,
         message=text,
         random_id=random.randint(1, 1000))
-    question = get_question(normalized_quiz_question, current_user_id, redis_db,
-                            users_question)
+    question = get_question(normalized_quiz_question, users_question, True)
+    redis_db.set(current_user_id, question)
     logger.info(f'новый вопрос - {question}')
     vk_bot.messages.send(
         user_id=current_user_id,
@@ -84,14 +88,13 @@ def handle_solution_attempt(event, vk_bot, normalized_quiz_question, redis_db):
 
     if user_message == answer:
         bot_answer = (
-            'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
-        )
-        get_question(normalized_quiz_question, current_user_id, redis_db,
-                     users_question)
+            'Сила с тобою юный подаван! нажми панели «Новый вопрос»')
+        question = get_question(normalized_quiz_question, users_question, True)
+        redis_db.set(current_user_id, question)
         new_score = int(redis_db.get(count_key)) + 1
         redis_db.set(count_key, new_score)
     else:
-        bot_answer = 'Неправильно… Попробуешь ещё раз?'
+        bot_answer = 'Сегодня сила не благоволит тебе, попробуй еще!'
 
     vk_bot.messages.send(
         user_id=current_user_id,

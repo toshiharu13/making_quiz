@@ -1,22 +1,14 @@
 import logging
+import random
 
 logger = logging.getLogger(__name__)
 
 
-def get_question(quiz, id, redis_db, old_key=None, jump=False):
-    all_keys = list(quiz.keys())
-    if old_key:
-        currant_question = old_key
-    else:
-        currant_question = all_keys[0]
+def get_question(quiz, old_question=None, jump=False):
+    current_question = old_question
+    if jump or not current_question:
+        current_question, current_answer = random.choice(list(quiz.items()))
+        logger.info(f'Выбранные вопрос/ответ:'
+                    f' {current_question} -  {current_answer}')
 
-    if jump:
-        currant_index = all_keys.index(currant_question)
-        try:
-            currant_question = all_keys[currant_index+1]
-        except IndexError:
-            logger.info('вопросы закончились давайте подсчитаем очки')
-            currant_question = all_keys[currant_index]
-    redis_db.set(id, currant_question)
-
-    return currant_question
+    return current_question

@@ -20,8 +20,8 @@ def start(update, context):
 
     update.message.reply_text(
         text=f'''Обнаружена база повстанцев!
-        Для рестарта R2D2 дайте команту /clear
-        Если 3PO надоел, отключите его командой /end''',
+        Для рестарта R2D2 дайте команду /clear
+        Если 3CPO надоел, отключите его командой /end''',
         reply_markup=ReplyKeyboardMarkup(custom_keyboard))
     return QUIZ_KEYBOARD
 
@@ -54,8 +54,9 @@ def handle_new_question_request(update, context):
     redis_db = context.bot_data['redis_db']
     users_question = redis_db.get(current_user_id)
 
-    question = get_question(normalized_quiz_question,
-                            current_user_id, redis_db, users_question)
+    question = get_question(normalized_quiz_question, users_question)
+    if not users_question:
+        redis_db.set(current_user_id, question)
     context.bot.send_message(
         chat_id=current_user_id,
         text=question)
@@ -72,8 +73,8 @@ def surender(update, context):
     context.bot.send_message(
         chat_id=current_user_id,
         text=text)
-    question = get_question(normalized_quiz_question, current_user_id, redis_db,
-                            users_question, True)
+    question = get_question(normalized_quiz_question, users_question, True)
+    redis_db.set(current_user_id, question)
     context.bot.send_message(
         chat_id=current_user_id,
         text=question)
@@ -101,14 +102,14 @@ def handle_solution_attempt(update, context):
 
     if user_message == answer:
         bot_answer = (
-            'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
+            'Сила с тобою юный подаван! нажми панели «Новый вопрос»'
         )
-        get_question(normalized_quiz_question, current_user_id, redis_db,
-                     users_question, True)
+        question = get_question(normalized_quiz_question, users_question, True)
+        redis_db.set(current_user_id, question)
         new_score = int(redis_db.get(count_key)) + 1
         redis_db.set(count_key, new_score)
     else:
-        bot_answer = 'Неправильно… Попробуешь ещё раз?'
+        bot_answer = 'Сегодня сила не благоволит тебе, попробуй еще!'
 
     context.bot.send_message(
         chat_id=update.effective_chat.id,
