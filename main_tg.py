@@ -16,18 +16,25 @@ logger = logging.getLogger(__name__)
 
 
 def start(update, context):
+    custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счёт']]
+
+    update.message.reply_text(
+        text=f'''Обнаружена база повстанцев!
+        Для рестарта R2D2 дайте команту /clear
+        Если 3PO надоел, отключите его командой /end''',
+        reply_markup=ReplyKeyboardMarkup(custom_keyboard))
+    return QUIZ_KEYBOARD
+
+
+def clear_base(update, context):
     current_user_id = update.effective_chat.id
     redis_db = context.bot_data['redis_db']
     count_key = f'{current_user_id}_count'
     redis_db.delete(current_user_id)
     redis_db.set(count_key, 0)
 
-    custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счёт']]
-
     update.message.reply_text(
-        text='Обнаружена база повстанцев!',
-        reply_markup=ReplyKeyboardMarkup(custom_keyboard))
-    return QUIZ_KEYBOARD
+        text='Счетчик сброшен, попробуйте ещё раз!')
 
 
 def end(update, context):
@@ -139,9 +146,10 @@ def main():
         'redis_db': redis_db}
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[CommandHandler('start', start)],
         states={
-            QUIZ_KEYBOARD: [CommandHandler("end", end),
+            QUIZ_KEYBOARD: [CommandHandler('end', end),
+                            CommandHandler('clear', clear_base),
                             MessageHandler(Filters.regex('^(Новый вопрос)$'),
                                            handle_new_question_request),
                             MessageHandler(Filters.regex('^(Сдаться)$'),
