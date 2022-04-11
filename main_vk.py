@@ -15,14 +15,24 @@ from prepare_question import get_question
 logger = logging.getLogger(__name__)
 
 
-def start(event, vk_bot, redis_db):
+def start(event, vk_bot):
+    current_user_id = event.user_id
+    vk_bot.messages.send(
+        user_id=current_user_id,
+        message=f'''Обнаружена база повстанцев!
+        Для рестарта R2D2 дайте команту /clear''',
+        random_id=random.randint(1, 1000))
+
+
+def clear_base(event, vk_bot, redis_db):
     current_user_id = event.user_id
     count_key = f'{current_user_id}_count'
     redis_db.delete(current_user_id)
     redis_db.set(count_key, 0)
+
     vk_bot.messages.send(
         user_id=current_user_id,
-        message='Я чувствую возмущение силы!',
+        message='Бортовой компьютер очищен, уходим в гиперпространство!',
         random_id=random.randint(1, 1000))
 
 
@@ -122,7 +132,9 @@ def main():
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
             if event.text == '/start':
-                start(event, vk_bot, redis_db)
+                start(event, vk_bot)
+            elif event.text == '/clear':
+                clear_base(event, vk_bot, redis_db)
             elif event.text == 'Новый вопрос':
                 handle_new_question_request(event, vk_bot,
                                             normalized_quiz_question, redis_db)

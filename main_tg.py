@@ -34,11 +34,11 @@ def clear_base(update, context):
     redis_db.set(count_key, 0)
 
     update.message.reply_text(
-        text='Счетчик сброшен, попробуйте ещё раз!')
+        text='Бортовой компьютер очищен, уходим в гиперпространство!')
 
 
 def end(update, context):
-    message_text = 'Заходите ещё!'
+    message_text = 'Да прибудет с тобой сила! Её тёмная сторона!'
     reply_markup = ReplyKeyboardRemove()
     chat_id = update.effective_chat.id
     context.bot.send_message(
