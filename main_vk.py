@@ -1,4 +1,5 @@
 import logging
+import os
 import random
 from pathlib import Path
 
@@ -8,9 +9,8 @@ from environs import Env
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkEventType, VkLongPoll
 
-from prepare_quiz import normalize_quiz, get_splitted_strings_from_file
 from prepare_question import get_question
-
+from prepare_quiz import get_splitted_strings_from_file, normalize_quiz
 
 logger = logging.getLogger(__name__)
 
@@ -117,14 +117,18 @@ def main():
                            db=env.str('REDIS_DB', 0),
                            decode_responses=True)
     quiz_folder = 'quiz-questions'
-    quiz_file = env.str('QUIZ_FILE')
-    quiz_full_path = Path.cwd() / quiz_folder / quiz_file
+    all_quizes = []
+    quiz_folder_path = Path.cwd()/quiz_folder
     vk_session = vk_api.VkApi(token=env.str('VK_API_KEY'))
     vk_bot = vk_session.get_api()
     longpoll = VkLongPoll(vk_session)
 
-    splitted_strings = get_splitted_strings_from_file(quiz_full_path)
-    normalized_quiz_question = normalize_quiz(splitted_strings)
+    all_quiz_files = os.listdir(quiz_folder_path)
+    for quiz_file in all_quiz_files:
+        quiz_from_one_file = get_splitted_strings_from_file(
+            f'{quiz_folder_path}/{quiz_file}')
+        all_quizes += quiz_from_one_file
+    final_normalized_quiz = normalize_quiz(all_quizes)
 
     keyboard = VkKeyboard(one_time=False)
     keyboard.add_button('Новый вопрос', color=VkKeyboardColor.PRIMARY)
@@ -140,13 +144,13 @@ def main():
                 clear_base(event, vk_bot, redis_db)
             elif event.text == 'Новый вопрос':
                 handle_new_question_request(event, vk_bot,
-                                            normalized_quiz_question, redis_db)
+                                            final_normalized_quiz, redis_db)
             elif event.text == "Сдаться":
-                surender(event, vk_bot, normalized_quiz_question, redis_db)
+                surender(event, vk_bot, final_normalized_quiz, redis_db)
             elif event.text == "Мой счёт":
                 get_count(event, vk_bot, redis_db)
             else:
-                handle_solution_attempt(event, vk_bot, normalized_quiz_question,
+                handle_solution_attempt(event, vk_bot, final_normalized_quiz,
                                         redis_db)
 
 

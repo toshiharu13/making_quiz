@@ -5,12 +5,11 @@ from pathlib import Path
 import redis
 from environs import Env
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import (CommandHandler,
-                          ConversationHandler, Filters, MessageHandler,
-                          Updater)
+from telegram.ext import (CommandHandler, ConversationHandler, Filters,
+                          MessageHandler, Updater)
 
-from prepare_quiz import normalize_quiz, get_splitted_strings_from_file
 from prepare_question import get_question
+from prepare_quiz import get_splitted_strings_from_file, normalize_quiz
 
 HELP, QUIZ_KEYBOARD, CHECK_ANSWER = range(3)
 logger = logging.getLogger(__name__)
