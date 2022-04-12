@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 
 import redis
@@ -133,17 +134,21 @@ def main():
                            decode_responses=True)
 
     quiz_folder = 'quiz-questions'
-    quiz_file = env.str('QUIZ_FILE')
-    quiz_full_path = Path.cwd()/quiz_folder/quiz_file
+    all_quizes = []
+    quiz_folder_path = Path.cwd()/quiz_folder
     tg_bot_key = env.str('TG_BOT_KEY')
 
-    splitted_strings = get_splitted_strings_from_file(quiz_full_path)
-    normalized_quiz_question = normalize_quiz(splitted_strings)
+    all_quiz_files = os.listdir(quiz_folder_path)
+    for quiz_file in all_quiz_files:
+        quiz_from_one_file = get_splitted_strings_from_file(
+            f'{quiz_folder_path}/{quiz_file}')
+        all_quizes += quiz_from_one_file
+    final_normalized_quiz = normalize_quiz(all_quizes)
 
     updater = Updater(tg_bot_key)
     dispatcher = updater.dispatcher
     bot_data = {
-        'normalized_quiz_question': normalized_quiz_question,
+        'normalized_quiz_question': final_normalized_quiz,
         'redis_db': redis_db}
 
     conv_handler = ConversationHandler(
