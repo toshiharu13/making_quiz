@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 from pathlib import Path
 
 import redis
@@ -8,7 +9,7 @@ from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (CommandHandler, ConversationHandler, Filters,
                           MessageHandler, Updater)
 
-from prepare_question import get_question
+#from prepare_question import get_question
 from prepare_quiz import get_splitted_strings_from_file, normalize_quiz
 
 HELP, QUIZ_KEYBOARD, CHECK_ANSWER = range(3)
@@ -52,14 +53,16 @@ def handle_new_question_request(update, context):
     current_user_id = update.effective_chat.id
     normalized_quiz_question = context.bot_data['normalized_quiz_question']
     redis_db = context.bot_data['redis_db']
-    users_question = redis_db.get(current_user_id)
 
-    question = get_question(normalized_quiz_question, users_question)
+    users_question = redis_db.get(current_user_id)
     if not users_question:
-        redis_db.set(current_user_id, question)
+        users_question, _ = random.choice(
+            list(normalized_quiz_question.items()))
     context.bot.send_message(
         chat_id=current_user_id,
-        text=question)
+        text=users_question)
+    logger.info(f'Ответ на вопрос - {normalized_quiz_question[users_question]}')
+
     return QUIZ_KEYBOARD
 
 
@@ -73,7 +76,7 @@ def surender(update, context):
     context.bot.send_message(
         chat_id=current_user_id,
         text=text)
-    question = get_question(normalized_quiz_question, users_question, True)
+    question, _ = random.choice(list(normalized_quiz_question.items()))
     redis_db.set(current_user_id, question)
     context.bot.send_message(
         chat_id=current_user_id,
