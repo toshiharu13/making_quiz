@@ -9,7 +9,6 @@ from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (CommandHandler, ConversationHandler, Filters,
                           MessageHandler, Updater)
 
-#from prepare_question import get_question
 from prepare_quiz import get_splitted_strings_from_file, normalize_quiz
 
 HELP, QUIZ_KEYBOARD, CHECK_ANSWER = range(3)
@@ -58,7 +57,7 @@ def handle_new_question_request(update, context):
     if not users_question:
         users_question, _ = random.choice(
             list(normalized_quiz_question.items()))
-    redis_db.set(current_user_id, users_question)
+        redis_db.set(current_user_id, users_question)
     context.bot.send_message(
         chat_id=current_user_id,
         text=users_question)

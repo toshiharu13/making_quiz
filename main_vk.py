@@ -9,7 +9,6 @@ from environs import Env
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkEventType, VkLongPoll
 
-from prepare_question import get_question
 from prepare_quiz import get_splitted_strings_from_file, normalize_quiz
 
 logger = logging.getLogger(__name__)
@@ -40,14 +39,17 @@ def handle_new_question_request(event, vk_bot,
                                 normalized_quiz_question, redis_db):
     logger.info(f'в event лежит {event.__dict__}')
     current_user_id = event.user_id
+
     users_question = redis_db.get(current_user_id)
-    question = get_question(normalized_quiz_question, users_question)
     if not users_question:
-        redis_db.set(current_user_id, question)
+        users_question, _ = random.choice(
+            list(normalized_quiz_question.items()))
+        redis_db.set(current_user_id, users_question)
+    logger.info(f'Ответ на вопрос - {normalized_quiz_question[users_question]}')
 
     vk_bot.messages.send(
         user_id=current_user_id,
-        message=question,
+        message=users_question,
         random_id=random.randint(1, 1000))
 
 
@@ -56,13 +58,16 @@ def surender(event, vk_bot, normalized_quiz_question, redis_db):
     users_question = redis_db.get(current_user_id)
     answer = normalized_quiz_question[users_question]
     text = f'Здесь империя вынуждена отступить! Ответ - {answer}'
+
     vk_bot.messages.send(
         user_id=current_user_id,
         message=text,
         random_id=random.randint(1, 1000))
-    question = get_question(normalized_quiz_question, users_question, True)
+
+    question, _ = random.choice(list(normalized_quiz_question.items()))
     redis_db.set(current_user_id, question)
     logger.info(f'новый вопрос - {question}')
+
     vk_bot.messages.send(
         user_id=current_user_id,
         message=question,
@@ -89,7 +94,7 @@ def handle_solution_attempt(event, vk_bot, normalized_quiz_question, redis_db):
     if user_message == answer:
         bot_answer = (
             'Сила с тобою юный подаван! нажми панели «Новый вопрос»')
-        question = get_question(normalized_quiz_question, users_question, True)
+        question, _ = random.choice(list(normalized_quiz_question.items()))
         redis_db.set(current_user_id, question)
         new_score = int(redis_db.get(count_key)) + 1
         redis_db.set(count_key, new_score)
