@@ -58,6 +58,7 @@ def handle_new_question_request(update, context):
     if not users_question:
         users_question, _ = random.choice(
             list(normalized_quiz_question.items()))
+    redis_db.set(current_user_id, users_question)
     context.bot.send_message(
         chat_id=current_user_id,
         text=users_question)
@@ -107,7 +108,7 @@ def handle_solution_attempt(update, context):
         bot_answer = (
             'Сила с тобою юный подаван! нажми панели «Новый вопрос»'
         )
-        question = get_question(normalized_quiz_question, users_question, True)
+        question, _ = random.choice(list(normalized_quiz_question.items()))
         redis_db.set(current_user_id, question)
         new_score = int(redis_db.get(count_key)) + 1
         redis_db.set(count_key, new_score)
